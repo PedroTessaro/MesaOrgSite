@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trilha iOS / macOS</title>
+<style>
+  :root{
+    --bg:#F7F7F5;
+    --ink:#1C1C1E;
+    --muted:#78787C;
+    --faint:#A6A6AA;
+    --line:#E6E5E2;
+    --line2:#DCDBD7;
+    --accent:#1E874B;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{background:var(--bg)}
+  body{margin:0;color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px;margin:0 auto;padding:40px 22px 90px}
+  a{color:inherit}
+  button{font-family:inherit}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+  h1{font-size:24px;font-weight:640;letter-spacing:-.015em;margin:0 0 3px}
+  .lead{color:var(--muted);font-size:14px;margin:0;max-width:52ch}
+
+  .hprog{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin:22px 0 8px}
+  .hprog .count{font-family:var(--mono);font-size:12.5px;color:var(--muted);white-space:nowrap}
+  .hprog .count b{color:var(--ink);font-weight:600}
+  .hbar{height:2px;background:var(--line2);position:relative;margin-bottom:26px}
+  .hbar .fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent);transition:width .3s ease}
+
+  .controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .seg{display:inline-flex;background:#EAE9E6;border-radius:9px;padding:3px}
+  .seg button{border:0;background:transparent;padding:6px 13px;border-radius:7px;font-size:13px;color:var(--muted);cursor:pointer;font-weight:500;transition:color .12s}
+  .seg button:hover{color:var(--ink)}
+  .seg button.active{background:#fff;color:var(--ink);font-weight:590;box-shadow:0 1px 2px rgba(0,0,0,.09)}
+  .editinputs{display:inline-flex;gap:6px;flex-wrap:wrap}
+  .editinputs input{border:1px solid var(--line2);background:#fff;border-radius:8px;padding:6px 9px;font-size:13px;width:92px;font-family:var(--sans);color:var(--ink)}
+  .txtbtn{border:0;background:transparent;color:var(--muted);font-size:13px;cursor:pointer;padding:4px 2px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line2)}
+  .txtbtn:hover{color:var(--ink)}
+  .synced{font-size:11.5px;color:var(--faint);margin:4px 0 0;min-height:15px}
+  .synced.warn{color:#B4741E}
+
+  .track{margin-top:22px}
+  .row{display:grid;grid-template-columns:34px 1fr;column-gap:14px}
+  .rail{position:relative;width:34px}
+  .rail::before{content:"";position:absolute;left:17px;top:0;bottom:0;width:2px;background:var(--seg-color,var(--line2));transform:translateX(-50%)}
+  .row:first-child .rail::before{top:22px}
+  .row:last-child .rail::before{bottom:calc(100% - 22px)}
+  .node{position:relative;z-index:2;width:20px;height:20px;border-radius:50%;margin:12px auto 0;background:var(--bg);display:flex;align-items:center;justify-content:center}
+  .node.pending{border:2px solid var(--line2)}
+  .node.current{border:2px solid var(--ink)}
+  .node.current i{width:7px;height:7px;border-radius:50%;background:var(--ink)}
+  .node.done{background:var(--accent)}
+  .node.done svg{display:block}
+
+  .col{min-width:0}
+  .row:not(:first-child) .col{border-top:1px solid var(--line)}
+  .head{display:flex;align-items:baseline;gap:11px;padding:14px 2px 14px 0;cursor:pointer;user-select:none}
+  .num{font-family:var(--mono);font-size:12px;color:var(--faint);font-weight:600}
+  .name{font-size:15.5px;font-weight:600;letter-spacing:-.01em;flex:1;min-width:0}
+  .dur{font-family:var(--mono);font-size:11px;color:var(--faint);white-space:nowrap}
+  .cnt{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
+  .cnt.ok{color:var(--accent)}
+  .caret{width:8px;height:12px;flex-shrink:0;color:var(--faint);transition:transform .22s ease}
+  .col.open .caret{transform:rotate(90deg)}
+
+  .body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .24s ease}
+  .col.open .body{grid-template-rows:1fr}
+  .inner{overflow:hidden}
+  .pad{padding:0 2px 18px 0}
+  .intro{margin:0 0 12px;color:var(--muted);font-size:13px}
+  .item{display:flex;gap:10px;align-items:flex-start;padding:5px 0;cursor:pointer}
+  .cbox{width:18px;height:18px;border-radius:5px;border:1.6px solid var(--line2);background:#fff;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:background .12s,border-color .12s}
+  .item:hover .cbox{border-color:var(--accent)}
+  .cbox svg{opacity:0;transition:opacity .12s}
+  .item.on .cbox{background:var(--accent);border-color:var(--accent)}
+  .item.on .cbox svg{opacity:1}
+  .item .lab{font-size:13.5px;transition:color .12s}
+  .item.on .lab{color:var(--faint);text-decoration:line-through;text-decoration-color:var(--line2)}
+
+  .block{margin-top:14px}
+  .bl{font-size:12.5px;font-weight:600;margin-bottom:2px}
+  .bt{font-size:12.5px;color:var(--muted)}
+  .bt.p{color:var(--ink)}
+
+  .foot{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+  .foot p{margin:0;font-size:11.5px;color:var(--faint);max-width:44ch}
+  .foot button{border:1px solid var(--line2);background:transparent;color:var(--muted);padding:7px 13px;border-radius:8px;font-size:12.5px;cursor:pointer}
+  .foot button:hover{border-color:#C98A86;color:#B4544E}
+
+  @media (max-width:520px){
+    .wrap{padding:28px 16px 70px}
+    h1{font-size:21px}
+    .head{gap:8px}
+    .dur{display:none}
+  }
+  .factions{display:flex;gap:10px}
+  .foot .factions button{border:1px solid var(--line2);background:transparent;color:var(--muted);padding:7px 13px;border-radius:8px;font-size:12.5px;cursor:pointer}
+  .foot .factions #share:hover{border-color:var(--ink);color:var(--ink)}
+  .foot .factions #reset:hover{border-color:#C98A86;color:#B4544E}
+  .share{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:#fff}
+  .share h3{margin:0 0 3px;font-size:13.5px;font-weight:640}
+  .share .desc{margin:0 0 14px;font-size:12px;color:var(--muted);max-width:60ch}
+  .grp{margin-bottom:14px}
+  .grp:last-child{margin-bottom:0}
+  .grp label{display:block;font-size:12px;font-weight:600;margin-bottom:6px}
+  .grp textarea{width:100%;min-height:60px;border:1px solid var(--line2);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:11px;color:var(--ink);resize:vertical;background:var(--bg)}
+  .acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center}
+  .acts button{border:1px solid var(--line2);background:#fff;border-radius:8px;padding:6px 12px;font-size:12.5px;cursor:pointer;color:var(--ink)}
+  .acts button:hover{border-color:var(--ink)}
+  .acts .primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .acts .primary:hover{border-color:var(--accent);opacity:.92}
+  .acts input[type=file]{font-size:11.5px;color:var(--muted)}
+  .msg{font-size:11.5px;color:var(--accent);min-height:15px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Trilha iOS / macOS</h1>
+    <p class="lead">Nove fases encadeadas, de fundamentos a Metal e interpretadores. Cerca de quatro a cinco meses no ritmo do time.</p>
+    <div class="hprog">
+      <div class="controls" id="controls"></div>
+      <div class="count" id="ovcount">0/0</div>
+    </div>
+    <div class="hbar"><div class="fill" id="ovfill" style="width:0%"></div></div>
+    <p class="synced" id="synced"></p>
+  </header>
+
+  <div class="track" id="track"></div>
+
+  <div class="foot">
+    <p>O progresso fica salvo neste painel. Para juntar o avanço de todos sem servidor, use exportar/importar.</p>
+    <div class="factions">
+      <button id="share">Exportar / importar</button>
+      <button id="reset">Zerar meu progresso</button>
+    </div>
+  </div>
+
+  <div class="share" id="sharepanel" hidden>
+    <h3>Juntar o progresso do time sem servidor</h3>
+    <p class="desc">Cada pessoa exporta o próprio painel e passa o código (Slack, e-mail ou arquivo). Ao importar, os itens marcados de todos são somados; nada é apagado, então dá para ir passando o mesmo arquivo de mão em mão.</p>
+    <div class="grp">
+      <label>Exportar — copie ou baixe este código</label>
+      <textarea id="expout" readonly></textarea>
+      <div class="acts">
+        <button id="copybtn">Copiar código</button>
+        <button id="dlbtn">Baixar .json</button>
+        <span class="msg" id="expmsg"></span>
+      </div>
+    </div>
+    <div class="grp">
+      <label>Importar — cole um código ou escolha um arquivo</label>
+      <textarea id="impin" placeholder="cole aqui o código de outra pessoa"></textarea>
+      <div class="acts">
+        <input type="file" id="impfile" accept="application/json,.json">
+        <button class="primary" id="applybtn">Aplicar e somar</button>
+        <span class="msg" id="impmsg"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PHASES=[
+ {n:"00",name:"Fundamentos de Swift e ferramentas",dur:"~1 semana",
+  intro:"Garantir que a base de Swift está firme antes de encostar nos frameworks. Boa parte dos perrengues seguintes começa aqui.",
+  items:["Optionals: unwrapping, optional chaining, guard let, if let, nil coalescing","Value types vs reference types (struct, enum, class) e quando usar cada um","Protocolos, protocol-oriented programming e generics básicos","Closures: escaping vs non-escaping, capture lists, [weak self]","ARC, retain cycles, weak/unowned","Tratamento de erro: throws, do/catch, Result","Xcode no dia a dia: breakpoints, LLDB básico (po, p), Instruments"],
+  res:"Hacking with Swift (Paul Hudson), o livro The Swift Programming Language da Apple, artigos do Kodeco.",
+  prac:"Um programa de linha de comando (Swift Package) modelando um domínio simples, tipo uma lista de tarefas em memória."},
+ {n:"01",name:"UIKit",dur:"~3 a 4 semanas",
+  intro:"A base de UI no iOS. É a fase com mais material disponível, então dá para ir fundo sem sofrer para achar referência.",
+  items:["Ciclo de vida da view (viewDidLoad, viewWillAppear, viewDidLayoutSubviews)","Auto Layout: constraints programáticas e Interface Builder, UIStackView","UIViewController e navegação: UINavigationController, tab bar, modal","UITableView e UICollectionView: delegate/dataSource, Diffable Data Source, Compositional Layout","Passagem de dados entre telas e o padrão Coordinator","Gestos e touch handling","MVC e MVVM, e por que MVVM organiza e testa melhor"],
+  res:"Documentação do UIKit, a trilha de UIKit do Hacking with Swift, sessões de WWDC sobre Diffable Data Sources e Compositional Layout.",
+  prac:"Um app mestre-detalhe com lista, tela de detalhe, navegação e formulário, organizado em MVVM."},
+ {n:"02",name:"AppKit",dur:"~2 semanas",
+  intro:"Aproveitar o que já sabem de UIKit e focar no que muda no macOS, não recomeçar do zero.",
+  items:["O que difere de UIKit: NSView vs UIView, coordenadas invertidas, responder chain","NSViewController, NSWindow e NSWindowController","NSTableView, NSOutlineView, NSCollectionView","Menus (NSMenu), toolbar e o HIG do macOS","Auto Layout no AppKit","Target-action e Cocoa Bindings (legado, mas ainda aparece)","Noção de Mac Catalyst e da interop entre UIKit e AppKit"],
+  res:"A documentação do AppKit e o sample code da Apple são a fonte principal; blogs de devs macOS ajudam com o HIG.",
+  prac:"Recriar uma das telas da Fase 1 como app nativo de macOS (janela, table view, menu)."},
+ {n:"03",name:"SwiftUI",dur:"~2 a 3 semanas",
+  intro:"O jeito declarativo de fazer UI, com o mesmo código em iOS e macOS. Depois de UIKit/AppKit para entender o que ele resolve e o que esconde.",
+  items:["Paradigma declarativo vs imperativo","Views, composição de views e modifiers (a ordem importa)","Layout: VStack, HStack, ZStack, Grid, alignment, GeometryReader","Estado: @State, @Binding, @Observable, ObservableObject/@Published, @Environment","Fluxo de dados e identidade: ForEach, o que faz a tela redesenhar","Listas, NavigationStack, sheets e apresentações","Animações e transições básicas","Interop: UIViewRepresentable, NSViewRepresentable, hosting controllers",".task e async direto na view"],
+  res:"A trilha de SwiftUI do Hacking with Swift (100 Days of SwiftUI), tutoriais oficiais da Apple, WWDC sobre data flow e Observation.",
+  prac:"Recriar a tela mestre-detalhe da Fase 1 em SwiftUI, rodando em iOS e macOS, com uma UIView/NSView embutida via representable."},
+ {n:"04",name:"Concorrência e paralelismo",dur:"~2 semanas",
+  intro:"Os conceitos antes da sintaxe. Sem essa base, async/await funciona até o dia em que quebra e ninguém entende o porquê.",
+  items:["Concorrência (dar conta de várias coisas) vs paralelismo (rodar várias ao mesmo tempo)","Threads, a main thread e por que UI só pode ser mexida nela","GCD: DispatchQueue, serial vs concurrent, async vs sync, QoS","Race conditions, deadlocks e data races","Locks, semáforos e barriers","Operation e OperationQueue","Thread Sanitizer no Xcode"],
+  res:"O Concurrency Programming Guide da Apple (antigo, mas os conceitos não envelhecem) e as sessões de WWDC sobre GCD e QoS.",
+  prac:"Um cache concorrente com leituras paralelas e escritas serializadas. Provocar uma race condition, pegá-la com o Thread Sanitizer e corrigir."},
+ {n:"05",name:"Swift Concurrency e Combine",dur:"~3 semanas",
+  intro:"O modelo moderno de concorrência, mais Combine para conviver com código legado. É o \u201ccomo\u201d do que aprenderam na fase anterior.",
+  items:["async/await e structured concurrency","Task, TaskGroup, cancelamento e como ele se propaga","Actors, @MainActor, isolamento e Sendable","AsyncSequence e AsyncStream","Migrar callbacks e GCD para async com continuations","Combine: publishers, subscribers, operadores, @Published, AnyCancellable","Onde Combine ainda faz sentido (pipelines reativos, APIs que já entregam publishers)","Ponte com async (.values, expor async como publisher)"],
+  res:"A série de WWDC sobre Swift Concurrency (peguem as recentes), documentação de Concurrency e Combine, e o Point-Free para ir além.",
+  prac:"Reescrever o cache da Fase 4 com um actor, e montar uma camada de rede em async/await que também exponha um publisher Combine."},
+ {n:"06",name:"CloudKit",dur:"~2 semanas",
+  intro:"Persistência e sincronização na nuvem da Apple. Depende de concorrência porque quase tudo por aqui é assíncrono.",
+  items:["O modelo: containers, databases (public, private, shared), records, zones","CKRecord, CKRecord.Reference, CKAsset","Queries, subscriptions e push notifications para sincronizar","Estratégias de sincronização e resolução de conflito","Sync automático: NSPersistentCloudKitContainer ou SwiftData + CloudKit","Tratamento de erro, retry e comportamento offline","CloudKit Console e o schema"],
+  res:"A documentação do CloudKit e as sessões de WWDC sobre CloudKit e sobre sync com Core Data e SwiftData.",
+  prac:"Um app de notas com sync na private database entre dois simuladores, com um conflito criado de propósito para resolver."},
+ {n:"07",name:"Metal e shaders",dur:"~3 a 4 semanas",
+  intro:"A camada gráfica de baixo nível. A parte mais difícil da trilha para quem é júnior — reservem fôlego e não pulem a matemática.",
+  items:["O pipeline gráfico: vértices, fragments, rasterização","Matemática de base: vetores, matrizes, coordenadas, transformações","Metal: MTLDevice, command queue, command buffer, encoders","Buffers e textures","Metal Shading Language: vertex shader e fragment shader","Render pipeline vs compute pipeline","Integração com MTKView e como embutir em UIKit ou AppKit"],
+  res:"The Book of Shaders (intuição de fragment shader), Shadertoy, Metal by Tutorials (Kodeco), documentação e vídeos de WWDC sobre Metal.",
+  prac:"Um MTKView desenhando um triângulo colorido, evoluindo para um fragment shader animado. A meta é entender o fluxo inteiro."},
+ {n:"08",name:"Lógica de interpretadores",dur:"~3 semanas",
+  intro:"Como transformar texto em algo que executa. Bem independente do resto e por último por ser densa.",
+  items:["O pipeline: lexing/tokenização, parsing (a AST) e avaliação","Gramáticas, notação BNF e precedência de operadores","Recursive descent parsing","Tree-walking interpreter, o tipo mais simples de começar","Environments e escopos: variáveis, atribuição, blocos","Compilar para bytecode e rodar numa VM (se sobrar tempo)"],
+  res:"Crafting Interpreters (Robert Nystrom), gratuito. Writing an Interpreter in Go (Thorsten Ball) é uma alternativa mais curta.",
+  prac:"Um interpretador de calculadora com variáveis (x = 3; y = x * 2 + 1) em Swift, com lexer, parser e avaliador separados."}
+];
+const TOTAL=PHASES.reduce((s,p)=>s+p.items.length,0);
+const CHECK='<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2 5 8.7 9.7 3.5" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CARET='<svg class="caret" viewBox="0 0 8 12" fill="none"><path d="M1.5 1.5 6 6l-4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const DEFAULT_ROSTER=[{id:"d1",name:"Dev 1"},{id:"d2",name:"Dev 2"},{id:"d3",name:"Dev 3"},{id:"d4",name:"Dev 4"}];
+
+const hasStore=(typeof window!=="undefined")&&window.storage;
+const mem={};
+let board={roster:DEFAULT_ROSTER.map(x=>({...x})),progress:{}};
+let meId=null, editing=false, syncFailed=false, ready=false;
+const open=new Set();
+let saveTimer=null;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const iid=(pi,ii)=>"p"+pi+"-"+ii;
+
+function getSet(id){ return new Set(board.progress[id]||[]); }
+function putSet(id,set){ board.progress[id]=[...set]; }
+function phaseDone(pi,set){ let c=0; PHASES[pi].items.forEach((_,ii)=>{ if(set.has(iid(pi,ii))) c++; }); return c; }
+function currentPhase(set){ for(let i=0;i<PHASES.length;i++){ if(phaseDone(i,set)<PHASES[i].items.length) return i; } return PHASES.length-1; }
+
+async function loadBoard(){
+  try{
+    const r = hasStore ? await window.storage.get("board",true) : (mem.board?{value:mem.board}:null);
+    if(r&&r.value){ const b=JSON.parse(r.value); if(b&&b.roster) board=b; }
+  }catch(e){}
+  if(!board.roster||!board.roster.length) board.roster=DEFAULT_ROSTER.map(x=>({...x}));
+  if(!board.progress) board.progress={};
+}
+function scheduleSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(saveBoard,450); }
+async function saveBoard(){
+  const value=JSON.stringify(board);
+  for(let a=0;a<2;a++){
+    try{
+      if(hasStore) await window.storage.set("board",value,true); else mem.board=value;
+      if(syncFailed){ syncFailed=false; renderSync(); }
+      return;
+    }catch(e){ if(a===0) await sleep(700); }
+  }
+  mem.board=value; // sempre guarda em memória local
+  syncFailed=true; renderSync();
+}
+async function loadMe(){
+  try{ const r=hasStore?await window.storage.get("me",false):(mem.me?{value:mem.me}:null); return r&&r.value?r.value:null; }
+  catch(e){ return null; }
+}
+async function saveMe(){ try{ if(hasStore) await window.storage.set("me",meId,false); else mem.me=meId; }catch(e){} }
+
+/* ---------- render ---------- */
+function renderSync(){
+  const el=document.getElementById("synced");
+  if(syncFailed){ el.textContent="Sem conexão com o armazenamento — progresso salvo só neste dispositivo."; el.className="synced warn"; }
+  else{ el.textContent=""; el.className="synced"; }
+}
+function renderControls(){
+  const el=document.getElementById("controls");
+  if(editing){
+    let h='<div class="editinputs">';
+    board.roster.forEach(p=>{ h+='<input data-edit="'+p.id+'" value="'+esc(p.name).replace(/"/g,"&quot;")+'" maxlength="16">'; });
+    h+='</div><button class="txtbtn" id="editbtn">Concluir</button>';
+    el.innerHTML=h;
+    el.querySelectorAll("[data-edit]").forEach(inp=>{
+      inp.addEventListener("input",e=>{ const p=board.roster.find(r=>r.id===e.target.getAttribute("data-edit")); if(p){ p.name=e.target.value||p.name; scheduleSave(); } });
+    });
+  }else{
+    let h='<div class="seg">';
+    board.roster.forEach(p=>{ h+='<button data-pid="'+p.id+'"'+(p.id===meId?' class="active"':'')+'>'+esc(p.name)+'</button>'; });
+    h+='</div><button class="txtbtn" id="editbtn">Editar nomes</button>';
+    el.innerHTML=h;
+    el.querySelectorAll("[data-pid]").forEach(b=>{
+      b.addEventListener("click",()=>{ meId=b.getAttribute("data-pid"); saveMe(); render(); });
+    });
+  }
+  document.getElementById("editbtn").addEventListener("click",()=>{ if(editing) scheduleSave(); editing=!editing; renderControls(); });
+}
+function renderOverall(){
+  const set=getSet(meId);
+  let done=0; PHASES.forEach((_,pi)=>done+=phaseDone(pi,set));
+  const pct=TOTAL?Math.round(done/TOTAL*100):0;
+  document.getElementById("ovcount").innerHTML='<b>'+done+'</b>/'+TOTAL+' · '+pct+'%';
+  document.getElementById("ovfill").style.width=(TOTAL?done/TOTAL*100:0)+"%";
+}
+function renderTrack(){
+  const set=getSet(meId);
+  const cur=currentPhase(set);
+  const track=document.getElementById("track");
+  track.innerHTML="";
+  PHASES.forEach((ph,pi)=>{
+    const done=phaseDone(pi,set), total=ph.items.length, complete=done===total, isCur=(pi===cur&&!complete);
+    const row=document.createElement("div"); row.className="row";
+    const railStyle=complete?' style="--seg-color:var(--accent)"':'';
+    const node = complete? '<span class="node done">'+CHECK+'</span>'
+               : isCur? '<span class="node current"><i></i></span>'
+               : '<span class="node pending"></span>';
+    let items="";
+    ph.items.forEach((it,ii)=>{ const id=iid(pi,ii); const on=set.has(id);
+      items+='<div class="item'+(on?' on':'')+'" data-item="'+id+'"><span class="cbox">'+CHECK+'</span><span class="lab">'+esc(it)+'</span></div>'; });
+    const cnt = complete? '<span class="cnt ok">concluída</span>' : '<span class="cnt">'+done+'/'+total+'</span>';
+    row.innerHTML =
+      '<div class="rail"'+railStyle+'>'+node+'</div>'+
+      '<div class="col'+(open.has(pi)?' open':'')+'" data-col="'+pi+'">'+
+        '<div class="head" data-head="'+pi+'">'+
+          '<span class="num">'+ph.n+'</span>'+
+          '<span class="name">'+esc(ph.name)+'</span>'+
+          '<span class="dur">'+ph.dur+'</span>'+cnt+CARET+
+        '</div>'+
+        '<div class="body"><div class="inner"><div class="pad">'+
+          items+
+          '<div class="block"><div class="bl">Recursos</div><div class="bt">'+esc(ph.res)+'</div></div>'+
+          '<div class="block"><div class="bl">Prática</div><div class="bt p">'+esc(ph.prac)+'</div></div>'+
+        '</div></div></div>'+
+      '</div>';
+    track.appendChild(row);
+  });
+  track.querySelectorAll("[data-head]").forEach(h=>{
+    h.addEventListener("click",()=>{ const pi=+h.getAttribute("data-head");
+      if(open.has(pi)) open.delete(pi); else open.add(pi);
+      h.closest(".col").classList.toggle("open"); });
+  });
+  track.querySelectorAll("[data-item]").forEach(it=>{
+    it.addEventListener("click",e=>{ e.stopPropagation();
+      const id=it.getAttribute("data-item"); const set=getSet(meId);
+      if(set.has(id)) set.delete(id); else set.add(id);
+      putSet(meId,set); renderTrack(); renderOverall(); scheduleSave(); });
+  });
+}
+function render(){ renderControls(); renderOverall(); renderTrack(); renderSync(); }
+
+document.getElementById("reset").addEventListener("click",()=>{
+  const nm=(board.roster.find(r=>r.id===meId)||{}).name||"você";
+  if(!confirm("Zerar todo o progresso de "+nm+"?")) return;
+  putSet(meId,new Set()); render(); scheduleSave();
+});
+
+/* ---------- exportar / importar (sem servidor) ---------- */
+function b64enc(str){ const b=new TextEncoder().encode(str); let s=""; b.forEach(x=>s+=String.fromCharCode(x)); return btoa(s); }
+function b64dec(b64){ const bin=atob(b64.trim()); return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0))); }
+function exportCode(){ return b64enc(JSON.stringify(board)); }
+function parseIncoming(text){
+  text=(text||"").trim(); if(!text) return null;
+  try{ return JSON.parse(text); }catch(e){}
+  try{ return JSON.parse(b64dec(text)); }catch(e){}
+  return null;
+}
+function mergeBoard(inc){
+  if(Array.isArray(inc.roster)) inc.roster.forEach(ip=>{
+    const lp=board.roster.find(r=>r.id===ip.id);
+    if(lp){ if(/^Dev \d$/.test(lp.name)&&ip.name) lp.name=ip.name; }
+    else if(ip.id) board.roster.push({id:ip.id,name:ip.name||ip.id});
+  });
+  if(inc.progress) Object.keys(inc.progress).forEach(pid=>{
+    const cur=new Set(board.progress[pid]||[]);
+    (inc.progress[pid]||[]).forEach(x=>cur.add(x));
+    board.progress[pid]=[...cur];
+  });
+}
+const sp=document.getElementById("sharepanel");
+document.getElementById("share").addEventListener("click",()=>{
+  const wasHidden=sp.hidden; sp.hidden=!wasHidden;
+  if(wasHidden){ document.getElementById("expout").value=exportCode();
+    document.getElementById("expmsg").textContent=""; document.getElementById("impmsg").textContent=""; sp.scrollIntoView({behavior:"smooth",block:"nearest"}); }
+});
+document.getElementById("copybtn").addEventListener("click",async()=>{
+  const ta=document.getElementById("expout"), msg=document.getElementById("expmsg");
+  try{ await navigator.clipboard.writeText(ta.value); msg.textContent="copiado"; }
+  catch(e){ ta.focus(); ta.select(); try{ document.execCommand("copy"); msg.textContent="copiado"; }catch(_){ msg.textContent="selecione o texto e copie"; } }
+});
+document.getElementById("dlbtn").addEventListener("click",()=>{
+  const blob=new Blob([JSON.stringify(board,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download="trilha-progresso.json"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+document.getElementById("impfile").addEventListener("change",e=>{
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  const rd=new FileReader(); rd.onload=()=>{ document.getElementById("impin").value=rd.result; }; rd.readAsText(f);
+});
+document.getElementById("applybtn").addEventListener("click",()=>{
+  const msg=document.getElementById("impmsg");
+  const inc=parseIncoming(document.getElementById("impin").value);
+  if(!inc||!(inc.progress||inc.roster)){ msg.style.color="#B4544E"; msg.textContent="código inválido"; return; }
+  mergeBoard(inc); render(); scheduleSave();
+  document.getElementById("expout").value=exportCode();
+  msg.style.color="var(--accent)"; msg.textContent="progresso somado";
+});
+
+(async function init(){
+  await loadBoard();
+  meId=await loadMe();
+  if(!meId||!board.roster.find(r=>r.id===meId)) meId=board.roster[0].id;
+  open.add(currentPhase(getSet(meId)));
+  ready=true; render();
+})();
+</script>
+</body>
+</html>
