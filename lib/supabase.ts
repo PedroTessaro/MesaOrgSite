@@ -7,8 +7,10 @@ let cached: SupabaseClient | null = null;
 
 export function supabaseAdmin(): SupabaseClient {
   if (cached) return cached;
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // trim tira espaços/quebras de linha coladas ao colar na Vercel;
+  // replace tira barras finais que gerariam "//rest/v1" (Invalid path).
+  const url = process.env.SUPABASE_URL?.trim().replace(/\/+$/, "");
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!url || !key) {
     throw new Error(
       "Faltam SUPABASE_URL e/ou SUPABASE_SERVICE_ROLE_KEY nas variáveis de ambiente."
