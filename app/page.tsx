@@ -40,6 +40,7 @@ export default function TrilhaPage() {
   const [editing, setEditing] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [warn, setWarn] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const lastWrite = useRef(0);
   const editingRef = useRef(editing);
@@ -63,9 +64,19 @@ export default function TrilhaPage() {
           router.replace("/login");
           return;
         }
-        if (!res.ok) throw new Error();
+        if (!res.ok) {
+          let msg = `Erro ${res.status} ao carregar o board.`;
+          try {
+            const d = await res.json();
+            if (d?.error) msg = d.error;
+          } catch {}
+          if (initial) setLoadError(msg);
+          setWarn(true);
+          return;
+        }
         const b: Board = await res.json();
         setWarn(false);
+        setLoadError(null);
         // Não sobrescreve enquanto edita nomes nem logo após uma marcação local.
         if (editingRef.current || (!initial && Date.now() - lastWrite.current < 2000)) return;
         applyBoard(b);
@@ -101,7 +112,24 @@ export default function TrilhaPage() {
   if (!board || !meId) {
     return (
       <div className="wrap">
-        <p className="lead">Carregando…</p>
+        {loadError ? (
+          <>
+            <h1>Não deu para carregar</h1>
+            <p className="synced warn" style={{ fontSize: 13 }}>{loadError}</p>
+            <p className="lead" style={{ marginTop: 12 }}>
+              Verifique na Vercel se as variáveis <code>SUPABASE_URL</code> e{" "}
+              <code>SUPABASE_SERVICE_ROLE_KEY</code> estão configuradas, e se o schema SQL
+              (<code>supabase/schema.sql</code>) foi rodado no Supabase. Depois, faça um redeploy.
+            </p>
+            <p className="lead" style={{ marginTop: 10 }}>
+              <button className="txtbtn" onClick={() => fetchBoard(true)}>
+                Tentar de novo
+              </button>
+            </p>
+          </>
+        ) : (
+          <p className="lead">Carregando…</p>
+        )}
       </div>
     );
   }
