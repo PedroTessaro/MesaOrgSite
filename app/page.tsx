@@ -324,7 +324,6 @@ export default function TrilhaPage() {
                 <div className="body">
                   <div className="inner">
                     <div className="pad">
-                      <p className="intro">{ph.intro}</p>
                       {ph.items.map((it, ii) => {
                         const id = itemId(pi, ii);
                         const on = set.has(id);
