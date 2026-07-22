@@ -24,5 +24,6 @@ insert into members (id, name, sort) values
   ('d1', 'Dev 1', 1),
   ('d2', 'Dev 2', 2),
   ('d3', 'Dev 3', 3),
-  ('d4', 'Dev 4', 4)
+  ('d4', 'Dev 4', 4),
+  ('d5', 'Dev 5', 5)
 on conflict (id) do nothing;
